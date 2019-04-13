@@ -8,6 +8,10 @@ import "./styles.css";
 function App() {
   return (
     <div className="App">
+      <h6>
+        Access camera and capture the screen shot and releated hooks for the
+        same
+      </h6>
       <Scan />
     </div>
   );
