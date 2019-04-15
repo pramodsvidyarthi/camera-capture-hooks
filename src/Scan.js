@@ -25,15 +25,15 @@ const useCameraStream = () => {
 
   const onSuccess = useCallback(stream => {
     setStream(stream);
-  });
+  }, []);
 
   const onError = useCallback(err => {
     if (err && err.name === "NotAllowedError") {
-      // alert("Give camera access");
+      alert("Give camera access");
     } else {
-      // alert("No camera found");
+      alert("No camera found");
     }
-  });
+  }, []);
 
   if (hasGetUserMedia) {
     navigator.mediaDevices.getUserMedia(constraints).then(onSuccess, onError);
@@ -44,7 +44,7 @@ const useCameraStream = () => {
   return stream;
 };
 
-const useCaptureImageFromVideo = video => {
+const getImageFromVideo = video => {
   const canvas = document.createElement("canvas");
   canvas.width = video.videoWidth;
   canvas.height = video.videoHeight;
@@ -57,7 +57,7 @@ const CameraView = React.forwardRef((props, videoRef) => {
   const cameraStream = useCameraStream();
   useEffect(() => {
     videoRef.current.srcObject = cameraStream;
-  }, [cameraStream]);
+  }, [videoRef, cameraStream]);
 
   return (
     <>
@@ -83,10 +83,10 @@ const Scan = () => {
   const onClick = () => setCamView(true);
   const videoRef = React.createRef();
   const onCapture = useCallback(() => {
-    const image = useCaptureImageFromVideo(videoRef.current);
+    const image = getImageFromVideo(videoRef.current);
     setCamView(false);
     setImage(image);
-  });
+  }, [videoRef]);
   return (
     <div style={WRAPPER_STYLES}>
       {image && <ImageView image={image} />}
