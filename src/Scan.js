@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 
 const WRAPPER_STYLES = {
   border: "1px dashed grey",
@@ -23,19 +23,20 @@ const useCameraStream = () => {
     []
   );
 
+  const onSuccess = useCallback(stream => {
+    setStream(stream);
+  });
+
+  const onError = useCallback(err => {
+    if (err && err.name === "NotAllowedError") {
+      // alert("Give camera access");
+    } else {
+      // alert("No camera found");
+    }
+  });
+
   if (hasGetUserMedia) {
-    navigator.mediaDevices.getUserMedia(constraints).then(
-      stream => {
-        setStream(stream);
-      },
-      err => {
-        if (err && err.name === "NotAllowedError") {
-          // alert("Give camera access");
-        } else {
-          // alert("No camera found");
-        }
-      }
-    );
+    navigator.mediaDevices.getUserMedia(constraints).then(onSuccess, onError);
   } else {
     alert("getUserMedia() is not supported by your browser");
   }
@@ -81,11 +82,11 @@ const Scan = () => {
   const [showCamView, setCamView] = useState(false);
   const onClick = () => setCamView(true);
   const videoRef = React.createRef();
-  const onCapture = () => {
+  const onCapture = useCallback(() => {
     const image = useCaptureImageFromVideo(videoRef.current);
     setCamView(false);
     setImage(image);
-  };
+  });
   return (
     <div style={WRAPPER_STYLES}>
       {image && <ImageView image={image} />}
