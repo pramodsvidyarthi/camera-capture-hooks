@@ -1,16 +1,14 @@
-import React, {
-  useState,
-  useRef,
-  useMemo,
-  useCallback,
-  useEffect
-} from "react";
+import React, { useState, useMemo, useEffect } from "react";
 
 const WRAPPER_STYLES = {
   border: "1px dashed grey",
   padding: "1rem",
   width: 250,
   height: 250
+};
+
+const VIDEO_STYLES = {
+  objectFit: "fill"
 };
 
 const useCameraStream = () => {
@@ -54,40 +52,48 @@ const useCaptureImageFromVideo = video => {
   return canvas.toDataURL("image/webp");
 };
 
-const CameraView = React.memo(({ onClickHandler }) => {
-  const videoRef = useRef();
+const CameraView = React.forwardRef((props, videoRef) => {
   const cameraStream = useCameraStream();
-  const onClick = useCallback(() => {
-    const image = useCaptureImageFromVideo(videoRef.current);
-    onClickHandler(image);
-  }, []);
-
   useEffect(() => {
     videoRef.current.srcObject = cameraStream;
   }, [cameraStream]);
 
   return (
-    <div>
-      <video height="100%" width="100%" autoPlay ref={videoRef} />
-      <button onClick={onClick}>Capture</button>
-    </div>
+    <>
+      <video
+        height="100%"
+        width="100%"
+        style={VIDEO_STYLES}
+        ref={videoRef}
+        autoPlay
+      />
+      {props.children}
+    </>
   );
 });
 
-const ImageView = ({ image }) => <img alt="some pic" src={image} />;
+const ImageView = ({ image }) => (
+  <img width="100%" height="100%" alt="some pic" src={image} />
+);
 
 const Scan = () => {
   const [image, setImage] = useState(false);
   const [showCamView, setCamView] = useState(false);
   const onClick = () => setCamView(true);
-  const onCameraClickHandler = dataURL => {
+  const videoRef = React.createRef();
+  const onCapture = () => {
+    const image = useCaptureImageFromVideo(videoRef.current);
     setCamView(false);
-    setImage(dataURL);
+    setImage(image);
   };
   return (
     <div style={WRAPPER_STYLES}>
       {image && <ImageView image={image} />}
-      {showCamView && <CameraView onClickHandler={onCameraClickHandler} />}
+      {showCamView && (
+        <CameraView ref={videoRef}>
+          <button onClick={onCapture}>Capture</button>
+        </CameraView>
+      )}
       {!showCamView && !image && <button onClick={onClick}>Show Camera</button>}
     </div>
   );
