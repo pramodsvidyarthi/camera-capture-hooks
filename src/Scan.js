@@ -1,4 +1,10 @@
-import React, { useState, useMemo, useEffect, useCallback } from "react";
+import React, {
+  useState,
+  useMemo,
+  useEffect,
+  useCallback,
+  useRef
+} from "react";
 
 const WRAPPER_STYLES = {
   border: "1px dashed grey",
@@ -13,6 +19,7 @@ const VIDEO_STYLES = {
 
 const useCameraStream = () => {
   const [stream, setStream] = useState();
+  const cameraStreamRef = useRef();
   const hasGetUserMedia = !!(
     navigator.mediaDevices && navigator.mediaDevices.getUserMedia
   );
@@ -23,8 +30,11 @@ const useCameraStream = () => {
     []
   );
 
-  const onSuccess = useCallback(stream => {
-    setStream(stream);
+  const onSuccess = useCallback(cameraStream => {
+    if (!cameraStreamRef.current) {
+      cameraStreamRef.current = cameraStream;
+      setStream(cameraStream);
+    }
   }, []);
 
   const onError = useCallback(err => {
@@ -36,7 +46,10 @@ const useCameraStream = () => {
   }, []);
 
   if (hasGetUserMedia) {
-    navigator.mediaDevices.getUserMedia(constraints).then(onSuccess, onError);
+    navigator.mediaDevices
+      .getUserMedia(constraints)
+      .then(onSuccess)
+      .catch(onError);
   } else {
     alert("getUserMedia() is not supported by your browser");
   }
@@ -53,35 +66,39 @@ const getImageFromVideo = video => {
   return canvas.toDataURL("image/webp");
 };
 
-const CameraView = React.forwardRef((props, videoRef) => {
-  const cameraStream = useCameraStream();
-  useEffect(() => {
-    videoRef.current.srcObject = cameraStream;
-  }, [videoRef, cameraStream]);
+const CameraView = React.memo(
+  React.forwardRef((props, videoRef) => {
+    const cameraStream = useCameraStream();
+    useEffect(() => {
+      if (cameraStream) {
+        videoRef.current.srcObject = cameraStream;
+      }
+    }, [cameraStream, videoRef]);
 
-  return (
-    <>
-      <video
-        height="100%"
-        width="100%"
-        style={VIDEO_STYLES}
-        ref={videoRef}
-        autoPlay
-      />
-      {props.children}
-    </>
-  );
-});
+    return (
+      <>
+        <video
+          height="100%"
+          width="100%"
+          style={VIDEO_STYLES}
+          ref={videoRef}
+          autoPlay
+        />
+        {props.children}
+      </>
+    );
+  })
+);
 
 const ImageView = ({ image }) => (
   <img width="100%" height="100%" alt="some pic" src={image} />
 );
 
 const Scan = () => {
+  const videoRef = React.createRef();
   const [image, setImage] = useState(false);
   const [showCamView, setCamView] = useState(false);
-  const onClick = () => setCamView(true);
-  const videoRef = React.createRef();
+  const onClick = useCallback(() => setCamView(true), []);
   const onCapture = useCallback(() => {
     const image = getImageFromVideo(videoRef.current);
     setCamView(false);
